@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Taskflow: organize tarefas, prioridades, prazos e categorias.">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Taskflow — Minhas Tarefas</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <a class="skip-link" href="#mainContent">Ir para o conteúdo</a>
+    <div class="app-shell">
+        <aside class="sidebar" id="sidebar">
+            <div class="brand">
+                <span class="brand-mark" aria-hidden="true">✓</span>
+                <div><strong>Taskflow</strong><span>Organize seu dia</span></div>
+            </div>
+
+            <nav class="sidebar-nav" aria-label="Navegação principal">
+                <button class="nav-item active" type="button" data-view="dashboard" aria-current="page"><span class="nav-icon" aria-hidden="true">⌂</span><span>Dashboard</span></button>
+                <button class="nav-item" type="button" data-view="hoje"><span class="nav-icon" aria-hidden="true">◉</span><span>Hoje</span><span class="nav-count" id="navTodayCount">0</span></button>
+                <button class="nav-item" type="button" data-view="calendario"><span class="nav-icon" aria-hidden="true">▦</span><span>Calendário</span></button>
+                <button class="nav-item" type="button" data-view="todas"><span class="nav-icon" aria-hidden="true">☷</span><span>Todas as tarefas</span></button>
+                <button class="nav-item" type="button" data-view="pendentes"><span class="nav-icon" aria-hidden="true">○</span><span>Pendentes</span><span class="nav-count" id="navPendingCount">0</span></button>
+                <button class="nav-item" type="button" data-view="concluidas"><span class="nav-icon" aria-hidden="true">✓</span><span>Concluídas</span></button>
+                <button class="nav-item" type="button" data-view="atrasadas"><span class="nav-icon" aria-hidden="true">!</span><span>Atrasadas</span><span class="nav-count danger" id="navOverdueCount">0</span></button>
+                <button class="nav-item" type="button" data-view="categorias"><span class="nav-icon" aria-hidden="true">◇</span><span>Categorias</span></button>
+                <button class="nav-item" type="button" data-view="arquivadas"><span class="nav-icon" aria-hidden="true">▣</span><span>Arquivadas</span></button>
+                <button class="nav-item" type="button" data-view="dados"><span class="nav-icon" aria-hidden="true">⇅</span><span>Backup</span></button>
+            </nav>
+
+            <div class="session-user" id="sessionUser" hidden>
+                <span class="session-avatar" id="sessionInitial">U</span>
+                <div><strong id="sessionUsername"></strong><small>Sessão protegida</small></div>
+                <button id="logoutButton" type="button" aria-label="Sair da conta" title="Sair">↪</button>
+            </div>
+            <div class="sidebar-footer" id="connectionStatus">
+                <span class="status-dot"></span>
+                <div><strong>API conectada</strong><small>Dados sincronizados</small></div>
+            </div>
+        </aside>
+
+        <button class="sidebar-overlay" id="sidebarOverlay" type="button" aria-label="Fechar menu"></button>
+
+        <main class="main-content" id="mainContent" tabindex="-1">
+            <header class="topbar">
+                <div class="title-group">
+                    <button class="menu-toggle" id="menuToggle" type="button" aria-label="Abrir menu" aria-expanded="false">☰</button>
+                    <div><p class="eyebrow" id="pageEyebrow">Visão geral</p><h1 id="pageTitle">Minhas Tarefas</h1></div>
+                </div>
+                <div class="topbar-actions">
+                    <label class="search-box" for="searchInput"><span aria-hidden="true">⌕</span><input id="searchInput" type="search" placeholder="Buscar em título, descrição ou categoria" autocomplete="off"></label>
+                    <button class="btn btn-primary" id="newTaskButton" type="button"><span aria-hidden="true">＋</span> Nova tarefa</button>
+                </div>
+            </header>
+
+            <section class="summary-grid" id="summarySection" aria-label="Resumo das tarefas">
+                <article class="summary-card accent-purple"><div class="summary-icon" aria-hidden="true">☷</div><div><span>Total de tarefas</span><strong id="totalCount">—</strong></div><small>Todos os registros ativos</small></article>
+                <article class="summary-card accent-blue"><div class="summary-icon" aria-hidden="true">○</div><div><span>Pendentes</span><strong id="pendingCount">—</strong></div><small>Aguardando conclusão</small></article>
+                <article class="summary-card accent-green"><div class="summary-icon" aria-hidden="true">✓</div><div><span>Concluídas</span><strong id="completedCount">—</strong></div><small>Tarefas finalizadas</small></article>
+                <article class="summary-card accent-red"><div class="summary-icon" aria-hidden="true">!</div><div><span>Atrasadas</span><strong id="overdueCount">—</strong></div><small>Precisam de atenção</small></article>
+            </section>
+
+            <section class="dashboard-insights" id="dashboardInsights" aria-label="Indicadores do dashboard">
+                <div class="insight-strip"><article><span>Para hoje</span><strong id="todayCount">0</strong></article><article><span>Próximos 7 dias</span><strong id="weekCount">0</strong></article><article><span>Progresso</span><strong id="completionRate">0%</strong></article></div>
+                <div class="spotlight-grid"><article class="spotlight-card"><div class="spotlight-heading"><span aria-hidden="true">◆</span><h2>Próximas importantes</h2></div><div id="importantTasks" class="mini-list"></div></article><article class="spotlight-card"><div class="spotlight-heading"><span aria-hidden="true">✓</span><h2>Concluídas recentemente</h2></div><div id="recentCompleted" class="mini-list"></div></article></div>
+            </section>
+
+            <section class="tasks-panel" id="tasksPanel">
+                <div class="panel-heading"><div><h2 id="listTitle">Tarefas recentes</h2><p id="resultCount" aria-live="polite">Carregando suas tarefas...</p></div><button class="filter-toggle" id="filterToggle" type="button" aria-expanded="false" aria-controls="filtersPanel"><span aria-hidden="true">⚙</span> Filtros</button></div>
+                <div class="filters" id="filtersPanel">
+                    <label><span>Status</span><select id="statusFilter"><option value="">Todos</option><option value="pendente">Pendente</option><option value="concluida">Concluída</option></select></label>
+                    <label><span>Prioridade</span><select id="priorityFilter"><option value="">Todas</option><option value="alta">Alta</option><option value="media">Média</option><option value="baixa">Baixa</option></select></label>
+                    <label><span>Categoria</span><select id="categoryFilter"><option value="">Todas</option></select></label>
+                    <label><span>Ordenar por</span><select id="sortFilter"><option value="">Mais recentes</option><option value="prioridade">Prioridade</option><option value="data_limite">Prazo</option></select></label>
+                    <button class="clear-filters" id="clearFilters" type="button">Limpar filtros</button>
+                </div>
+                <div class="tasks-grid" id="tasksGrid" aria-live="polite"><article class="task-card skeleton-card"><span></span><span></span><span></span></article><article class="task-card skeleton-card"><span></span><span></span><span></span></article><article class="task-card skeleton-card"><span></span><span></span><span></span></article></div>
+            </section>
+
+            <section class="calendar-panel view-panel" id="calendarPanel" hidden>
+                <div class="calendar-toolbar"><button class="icon-button" id="previousMonth" type="button" aria-label="Mês anterior">‹</button><h2 id="calendarTitle"></h2><button class="icon-button" id="nextMonth" type="button" aria-label="Próximo mês">›</button></div>
+                <div class="calendar-layout"><div class="calendar-grid" id="calendarGrid" role="grid" aria-label="Calendário mensal"></div><aside class="day-panel"><p class="eyebrow">Dia selecionado</p><h2 id="selectedDayTitle">Selecione um dia</h2><div class="mini-list" id="selectedDayTasks"><p class="muted-copy">Clique em um dia para ver suas tarefas.</p></div></aside></div>
+            </section>
+
+            <section class="categories-panel view-panel" id="categoriesPanel" hidden>
+                <div class="section-heading"><div><h2>Suas categorias</h2><p>Organize tarefas com nomes, cores e ícones próprios.</p></div><button class="btn btn-primary" id="newCategoryButton" type="button">＋ Nova categoria</button></div><div class="categories-grid" id="categoriesGrid" aria-live="polite"></div>
+            </section>
+
+            <section class="data-panel view-panel" id="dataPanel" hidden>
+                <div class="section-heading"><div><h2>Backup e restauração</h2><p>Exporte somente suas tarefas, categorias e preferências.</p></div></div>
+                <div class="data-actions-grid"><article class="data-card"><span class="data-icon" aria-hidden="true">↓</span><h3>Exportar backup</h3><p>Baixe uma cópia em JSON sem senhas, tokens ou cookies.</p><button class="btn btn-primary" id="exportBackupButton" type="button">Exportar JSON</button></article><article class="data-card"><span class="data-icon" aria-hidden="true">↑</span><h3>Restaurar backup</h3><p>A restauração substitui suas tarefas e categorias atuais.</p><label class="btn btn-ghost file-button" for="restoreBackupInput">Selecionar arquivo</label><input id="restoreBackupInput" type="file" accept="application/json,.json" hidden></article></div>
+            </section>
+        </main>
+    </div>
+
+    <dialog class="modal auth-modal" id="authModal" aria-labelledby="authTitle"><form id="authForm"><div class="auth-brand"><span class="brand-mark" aria-hidden="true">✓</span><div><strong>Taskflow</strong><small>Acesso seguro às suas tarefas</small></div></div><p class="eyebrow" id="authEyebrow">Bem-vindo</p><h2 id="authTitle">Entre na sua conta</h2><p class="auth-copy" id="authCopy">Use seu usuário e senha para continuar.</p><div class="auth-fields"><label class="field"><span>Usuário</span><input id="authUsername" name="usuario" minlength="3" maxlength="50" autocomplete="username" required placeholder="seu.usuario"></label><label class="field"><span>Senha</span><input id="authPassword" name="senha" type="password" minlength="10" maxlength="128" autocomplete="current-password" required placeholder="Sua senha"></label><label class="field" id="authConfirmGroup" hidden><span>Confirmar senha</span><input id="authPasswordConfirm" type="password" minlength="10" maxlength="128" autocomplete="new-password" placeholder="Repita a senha"></label></div><p class="auth-error" id="authError" role="alert"></p><button class="btn btn-primary auth-submit" id="authSubmit" type="submit">Entrar</button><button class="auth-switch" id="authSwitch" type="button">Ainda não tenho uma conta</button></form></dialog>
+
+    <dialog class="modal" id="taskModal" aria-labelledby="modalTitle"><form id="taskForm"><div class="modal-header"><div><p class="eyebrow" id="modalEyebrow">Nova tarefa</p><h2 id="modalTitle">Adicionar tarefa</h2></div><button class="icon-button" type="button" data-close-modal aria-label="Fechar">×</button></div><div class="form-grid"><label class="field full"><span>Título <b>*</b></span><input id="taskTitle" name="titulo" maxlength="200" required placeholder="Ex.: Preparar apresentação"></label><label class="field full"><span>Descrição</span><textarea id="taskDescription" name="descricao" maxlength="5000" rows="4" placeholder="Adicione alguns detalhes..."></textarea></label><label class="field"><span>Categoria</span><select id="taskCategory" name="categoria"><option value="">Sem categoria</option></select></label><label class="field"><span>Prioridade</span><select id="taskPriority" name="prioridade"><option value="baixa">Baixa</option><option value="media" selected>Média</option><option value="alta">Alta</option></select></label><label class="field full"><span>Data limite</span><input id="taskDeadline" name="data_limite" type="date"></label></div><div class="modal-actions"><button class="btn btn-ghost" type="button" data-close-modal>Cancelar</button><button class="btn btn-primary" id="saveTaskButton" type="submit">Criar tarefa</button></div></form></dialog>
+
+    <dialog class="modal details-modal" id="detailsModal" aria-labelledby="detailsTitle"><div class="details-modal-inner"><div class="details-scroll"><div class="modal-header details-header"><div><p class="eyebrow">Detalhes da tarefa</p><h2 id="detailsTitle"></h2></div><button class="icon-button" id="closeDetailsX" type="button" aria-label="Fechar detalhes">×</button></div><div class="details-badges"><span class="task-category detail-category" id="detailsCategory"></span><span class="badge" id="detailsPriority"></span><span class="badge" id="detailsStatus"></span></div><section class="details-description"><h3>Descrição</h3><p id="detailsDescription"></p></section><div class="details-dates"><div class="detail-date"><span>Data de criação</span><time id="detailsCreatedAt"></time></div><div class="detail-date"><span>Data limite</span><time id="detailsDeadline"></time></div><div class="detail-date" id="detailsCompletedGroup"><span>Data de conclusão</span><time id="detailsCompletedAt"></time></div><div class="detail-date" id="detailsArchivedGroup" hidden><span>Arquivada em</span><time id="detailsArchivedAt"></time></div></div></div><div class="details-actions"><button class="btn btn-ghost" id="detailsEdit" type="button">✎ Editar</button><button class="btn btn-ghost" id="detailsDuplicate" type="button">⧉ Duplicar</button><button class="btn btn-primary" id="detailsComplete" type="button">✓ Concluir</button><button class="btn btn-ghost" id="detailsArchive" type="button">▣ Arquivar</button><button class="btn btn-primary" id="detailsRestore" type="button" hidden>↶ Restaurar</button><button class="btn btn-danger-soft" id="detailsDelete" type="button">⌫ Excluir</button><button class="btn btn-ghost details-close" id="closeDetailsButton" type="button">Fechar</button></div></div></dialog>
+
+    <dialog class="modal category-modal" id="categoryModal" aria-labelledby="categoryModalTitle"><form id="categoryForm"><div class="modal-header"><div><p class="eyebrow" id="categoryModalEyebrow">Nova categoria</p><h2 id="categoryModalTitle">Criar categoria</h2></div><button class="icon-button" type="button" data-close-category aria-label="Fechar">×</button></div><div class="form-grid"><label class="field full"><span>Nome <b>*</b></span><input id="categoryName" maxlength="100" required placeholder="Ex.: Programação"></label><label class="field"><span>Cor</span><input id="categoryColor" type="color" value="#7c6df2"></label><label class="field"><span>Ícone opcional</span><input id="categoryIcon" maxlength="20" placeholder="Ex.: 💻"></label></div><div class="modal-actions"><button class="btn btn-ghost" type="button" data-close-category>Cancelar</button><button class="btn btn-primary" id="saveCategoryButton" type="submit">Criar categoria</button></div></form></dialog>
+
+    <dialog class="modal confirm-modal" id="confirmModal" aria-labelledby="confirmTitle"><div class="confirm-icon" aria-hidden="true">!</div><h2 id="confirmTitle">Confirmar ação?</h2><p id="confirmMessage"></p><div class="modal-actions"><button class="btn btn-ghost" id="cancelConfirm" type="button">Cancelar</button><button class="btn btn-danger" id="confirmAction" type="button">Confirmar</button></div></dialog>
+
+    <dialog class="modal onboarding-modal" id="onboardingModal" aria-labelledby="onboardingTitle"><div class="onboarding-content"><span class="onboarding-icon" id="onboardingIcon" aria-hidden="true">✓</span><p class="eyebrow">Bem-vindo ao Taskflow</p><h2 id="onboardingTitle">Organize suas tarefas</h2><p id="onboardingCopy">Centralize seus compromissos em um painel simples e claro.</p><div class="onboarding-dots" id="onboardingDots" aria-label="Progresso do onboarding"></div><div class="onboarding-actions"><button class="btn btn-ghost" id="skipOnboarding" type="button">Pular</button><button class="btn btn-primary" id="nextOnboarding" type="button">Próximo</button></div></div></dialog>
+
+    <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="false"></div>
+    <script src="/static/js/app.js" defer></script>
+</body>
+</html>
+
