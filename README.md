@@ -44,6 +44,14 @@ Para executar somente como aplicação web:
 
 O executável será criado em `dist\TaskFlow\TaskFlow.exe`.
 
+## Publicar uma atualização
+
+1. Altere o número do arquivo `VERSION`, usando o formato `1.2.3`.
+2. Envie a alteração para a branch `main`.
+3. O GitHub Actions gera o aplicativo e publica automaticamente o ZIP na página de Releases.
+
+Os bancos dos usuários ficam fora da pasta do programa e são preservados durante a atualização.
+
 ## Privacidade
 
 O repositório não contém bancos de dados, contas, senhas, backups, logs ou chaves gerados durante o uso. Esses arquivos são ignorados pelo Git.

@@ -1,0 +1,66 @@
+name: Publicar versão Windows
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - VERSION
+      - .github/workflows/release-windows.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Instalar dependências
+        run: python -m pip install -r requirements.txt
+
+      - name: Gerar aplicativo
+        run: .\build.bat
+
+      - name: Ler versão
+        id: version
+        shell: pwsh
+        run: |
+          $version = (Get-Content -LiteralPath VERSION -Raw).Trim()
+          if ($version -notmatch '^\d+\.\d+\.\d+$') {
+            throw "A versão deve usar o formato 1.2.3."
+          }
+          "number=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Compactar aplicativo
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.number }}"
+          Compress-Archive -LiteralPath dist\TaskFlow -DestinationPath "TaskFlow-Windows-v$version.zip" -CompressionLevel Optimal
+
+      - name: Criar ou atualizar Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = "${{ steps.version.outputs.number }}"
+          $tag = "v$version"
+          $asset = "TaskFlow-Windows-v$version.zip"
+
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag $asset --clobber
+          } else {
+            gh release create $tag $asset --target main --title "TaskFlow $tag" --notes "Versão $tag do TaskFlow para Windows. Baixe o ZIP, extraia a pasta completa e execute TaskFlow.exe."
+          }
+
